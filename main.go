@@ -32,7 +32,7 @@ func init() {
 }
 
 // @title Swagger yuanJewel go-core API
-// @version 1.5.5
+// @version 1.5.6
 // @description yuanJewel go-core API
 // @contact.name yuanJewel go-core Support
 
@@ -92,6 +92,7 @@ func main() {
 		&task.FinishStruct{}); err != nil {
 		log.Fatal("Start Work Error...", err)
 	}
+	defer task.BeforeExit()
 
 	// 启动api server服务
 	logger.Log.Info("服务已运行...")

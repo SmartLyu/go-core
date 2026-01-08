@@ -6,18 +6,12 @@ import (
 	"time"
 )
 
-var RegisteredTask = map[string]interface{}{
-	"test success": testSuccess,
-	"test error":   testError,
+var RegisteredTask = map[string]task.Func{
+	"test success": {F: testSuccess, Cancel: true},
+	"test error":   {F: testError, Cancel: false},
 }
 
 func testError(id string, data ...interface{}) (string, error) {
-	// Non-idempotent tasks require additional protection locks to use this module
-	t := task.LockTaskState(id)
-	if t != nil {
-		return t.Error(), nil
-	}
-
 	err := task.SetVariable(id, "test-str", fmt.Sprintf("%v", data[0]))
 	if err != nil {
 		return "", err
@@ -36,7 +30,10 @@ func testSuccess(id string, data ...interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("yuanTag Success " + s)
-	time.Sleep(3 * time.Second)
+
+	for i := 0; i < 300; i++ {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Printf("yuanTag Success [%s]: %d\n", s, i)
+	}
 	return s, nil
 }

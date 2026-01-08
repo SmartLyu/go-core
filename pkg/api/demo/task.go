@@ -119,3 +119,18 @@ func getRegister(ctx iris.Context) {
 	response := api.ResponseInit(ctx)
 	api.ResponseBody(ctx, response, task.GetRegisteredTaskNames())
 }
+
+// @Summary 获取作业状态
+// @Description 获取作业状态
+// @tags job
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response "ok"
+// @Failure 401 string string "未授权"
+// @Failure 403 {object} api.Response "权限不足"
+// @Failure 501 {object} api.Response "处理存在异常"
+// @Security ApiKeyAuth
+// @Router /api/v1/task/status [get]
+func getStepStatus(ctx iris.Context) {
+	task.GetRunningTaskStatus(ctx)
+}

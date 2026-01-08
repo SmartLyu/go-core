@@ -37,3 +37,27 @@ func (s *Store) SMembers(key string) ([]string, error) {
 	}
 	return members, nil
 }
+
+// SRem 删除指定元素
+func (s *Store) SRem(key string, members ...interface{}) error {
+	ctx, cancel := s.getContext()
+	if cancel != nil {
+		defer cancel()
+	}
+	if err := s.checkType(key, "set"); err != nil {
+		return err
+	}
+	return s.redisInstance.SRem(ctx, key, members...).Err()
+}
+
+// SIsMember 判断是否存在该元素
+func (s *Store) SIsMember(key string, member interface{}) (bool, error) {
+	ctx, cancel := s.getContext()
+	if cancel != nil {
+		defer cancel()
+	}
+	if err := s.checkType(key, "set"); err != nil {
+		return false, err
+	}
+	return s.redisInstance.SIsMember(ctx, key, member).Result()
+}

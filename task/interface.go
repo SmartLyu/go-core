@@ -91,6 +91,34 @@ func finishSuccess(job Job) error {
 	return nil
 }
 
+// SetRecycleKeyExpireTime 设置所有创建出来任务相关key的过期时间
+func SetRecycleKeyExpireTime(id string, expire time.Duration) error {
+	hasRecycleKey := make(map[string]bool)
+	all, err := redisInstance.SMembers(recycleKeyId(id))
+	if err != nil {
+		return err
+	}
+
+	for _, key := range all {
+		if _, ok := hasRecycleKey[key]; ok {
+			continue
+		}
+		hasRecycleKey[key] = true
+		exists, err := redisInstance.Exists(key)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			continue
+		}
+		err = redisInstance.Expire(key, expire)
+		if err != nil {
+			return err
+		}
+	}
+	return redisInstance.Expire(recycleKeyId(id), expire)
+}
+
 func needRecycleKey(stepId, key string) {
 	id, err := getJobId(stepId)
 	if err != nil {

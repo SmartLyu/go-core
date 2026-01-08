@@ -1,6 +1,7 @@
 package task
 
 import (
+	"errors"
 	"fmt"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
@@ -13,7 +14,10 @@ import (
 	"time"
 )
 
-const StateAborted = "ABORTED"
+const (
+	AbortedRetryError = "任务被取消"
+	StateAborted      = "ABORTED"
+)
 
 var (
 	machineryInstance *machinery.Server
@@ -21,10 +25,18 @@ var (
 	lockExpiration    time.Duration
 	varExpiration     time.Duration
 	finishExpiration  time.Duration
+	worker            *machinery.Worker
+	workerChannel     = make(chan error)
+	cancelTask        = make(map[string]chan int)
 	stepToJob         sync.Map
 )
 
-func InitWork(task Task, taskMap map[string]interface{}, f FinishInterface) (err error) {
+type Func struct {
+	F      interface{}
+	Cancel bool
+}
+
+func InitWork(task Task, taskMap map[string]Func, f FinishInterface) (err error) {
 	lockExpiration = time.Duration(task.LockExpiration) * time.Second
 	varExpiration = time.Duration(task.VarExpiration) * time.Second
 	finishExpiration = time.Duration(task.ResultsExpiration) * time.Second
@@ -66,11 +78,11 @@ func InitWork(task Task, taskMap map[string]interface{}, f FinishInterface) (err
 		return
 	}
 
-	taskMap["success"] = resultToDb
-	taskMap["error"] = errorToDb
-	taskMap["finish"] = finishTask
+	taskMap["success"] = Func{resultToDb, false}
+	taskMap["error"] = Func{errorToDb, false}
+	taskMap["finish"] = Func{finishTask, false}
 
-	err = machineryInstance.RegisterTasks(taskMap)
+	err = registerTasks(taskMap)
 	if err != nil {
 		return
 	}
@@ -81,10 +93,27 @@ func InitWork(task Task, taskMap map[string]interface{}, f FinishInterface) (err
 
 	logger.Log.Infof("Complete task system registration !")
 	if task.IsWorker {
-		worker := machineryInstance.NewWorker(task.Tag, task.Concurrency)
+		worker = machineryInstance.NewWorker(task.Tag, task.Concurrency)
 		logger.Log.Infof("Start one worker !")
-		worker.LaunchAsync(make(chan error))
+		worker.LaunchAsync(workerChannel)
 	}
 	finishObject = f
 	return
+}
+
+func BeforeExit() {
+	logger.Log.Infof("正在优雅退出...")
+	for id, channel := range cancelTask {
+		channel <- 2
+		err := redisInstance.Del(lockTaskKey(id, "task"))
+		if err != nil {
+			logger.Log.Errorf("删除任务锁失败: %v", err)
+		}
+	}
+	err := <-workerChannel
+	if errors.Is(err, machinery.ErrWorkerQuitGracefully) {
+		logger.Log.Infof("任务正常退出")
+	} else {
+		logger.Log.Errorf("任务异常退出: %v", err)
+	}
 }

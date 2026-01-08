@@ -19,4 +19,5 @@ func Party(app iris.Party, topPath string) {
 	app.Delete(api.Fusion(topPath, "task", "job"), deleteJobs).Name = "delete-task-jobs"
 	app.Get(api.Fusion(topPath, "task", "register"), getRegister).Name = "get-task-register"
 	app.Get(api.Fusion(topPath, "task", "step"), getSteps).Name = "get-task-steps"
+	app.Get(api.Fusion(topPath, "task", "status"), getStepStatus).Name = "get-task-step-status"
 }

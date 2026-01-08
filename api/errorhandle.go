@@ -52,6 +52,7 @@ const (
 	CreateTaskError     = 81
 	GetTaskBodyError    = 82
 	CannotFindTaskError = 83
+	GetTaskStatusError  = 84
 )
 
 func ReturnErr(code int, ctx iris.Context, err error, response *Response) {

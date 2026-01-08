@@ -18,12 +18,12 @@ func GetRegisteredTaskNames() []string {
 }
 
 func LockError(id string) error {
-	return fmt.Errorf("task-lock-%s", id)
+	return fmt.Errorf("任务%s已被锁定无法执行", id)
 }
 
 // LockTaskState Non-idempotent tasks require additional protection locks to use this module
 func LockTaskState(id string, suffix ...string) error {
-	lockId := fmt.Sprintf("step:%s:%s:lock", id, strings.Join(suffix, ":"))
+	lockId := lockTaskKey(id, suffix...)
 	lock, err := redisInstance.Exists(lockId)
 	if err != nil {
 		logger.Log.Errorf("redis for task is error, please check %v", err)
@@ -39,6 +39,10 @@ func LockTaskState(id string, suffix ...string) error {
 	}
 	defer needRecycleKey(id, lockId)
 	return nil
+}
+
+func lockTaskKey(id string, suffix ...string) string {
+	return fmt.Sprintf("step:%s:%s:lock", id, strings.Join(suffix, ":"))
 }
 
 func resultToDb(id string, _ ...interface{}) error {
@@ -125,6 +129,20 @@ func errorToDb(errorStr, id string, _ ...interface{}) error {
 	if !exists {
 		return fmt.Errorf("cannot find step: %s", id)
 	}
+
+	// Special logic: When a task is interrupted and a retry is triggered.
+	if errorStr == AbortedRetryError {
+		jobId, err := getJobId(id)
+		if err != nil {
+			return err
+		}
+		err = redisInstance.Del(lockTaskKey(id, "end"))
+		if err != nil {
+			logger.Log.Errorf("删除异常完结锁失败: %v", err)
+		}
+		return createTask(jobId, step.Stage)
+	}
+
 	if step.State == tasks.StateFailure {
 		logger.Log.Errorf("step %s has run over once", id)
 		return nil

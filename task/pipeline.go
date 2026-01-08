@@ -24,6 +24,9 @@ func createTask(job string, stage int) error {
 	}
 
 	for _, step := range steps {
+		if step.State == tasks.StateSuccess {
+			continue
+		}
 		signatures = append(signatures, &tasks.Signature{
 			UUID: signatureId(step.ID),
 			Name: step.Tag,
