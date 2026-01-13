@@ -39,13 +39,13 @@ type Func struct {
 func InitWork(task Task, taskMap map[string]Func, f FinishInterface) (err error) {
 	lockExpiration = time.Duration(task.LockExpiration) * time.Second
 	varExpiration = time.Duration(task.VarExpiration) * time.Second
-	finishExpiration = time.Duration(task.ResultsExpiration) * time.Second
+	finishExpiration = time.Duration(task.RunExpiration) * time.Second
 	stepToJob = sync.Map{}
 	machineryInstance, err = machinery.NewServer(&config.Config{
 		Broker:          fmt.Sprintf("amqp://%s:%s@%s:%s", task.RabbitMq.Username, task.RabbitMq.Password, task.RabbitMq.Host, task.RabbitMq.Port),
 		DefaultQueue:    task.RabbitMq.Queue,
 		ResultBackend:   fmt.Sprintf("redis://%s@%s:%s/%d", task.Redis.Password, task.Redis.Host, task.Redis.Port, task.Redis.Db),
-		ResultsExpireIn: task.ResultsExpiration,
+		ResultsExpireIn: task.RunExpiration,
 		Redis: &config.RedisConfig{
 			MaxIdle:      task.Redis.PoolSize,
 			ReadTimeout:  task.Redis.Timeout,

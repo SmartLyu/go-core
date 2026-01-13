@@ -30,9 +30,13 @@ func testSuccess(id string, data ...interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	err = task.SetRecycleKeyExpireTime(id, 100*time.Second)
+	if err != nil {
+		return "", err
+	}
 
-	for i := 0; i < 300; i++ {
-		time.Sleep(100 * time.Millisecond)
+	for i := 0; i < 10; i++ {
+		time.Sleep(10000 * time.Millisecond)
 		fmt.Printf("yuanTag Success [%s]: %d\n", s, i)
 	}
 	return s, nil

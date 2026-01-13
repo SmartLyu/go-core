@@ -13,17 +13,17 @@ type Task struct {
 	IsWorker    bool         `default:"false" yaml:"worker" json:"worker" env:"task.worker"`
 	Redis       config.Redis `yaml:"redis" json:"redis"`
 	RabbitMq    RabbitMq     `yaml:"mq" json:"mq"`
-	// ResultsExpiration is Task result expiration time.
-	// After the task ends, the parameters and lock retention time will be recycled according to this time.
+	// RunExpiration is Task running expiration time.
+	// After the task start, the parameters and lock retention time will be recycled according to this time.
 	// If the task fails and is blocked, the recycling time will increase exponentially.
 	// The storage time is evaluated by the redis service pressure.
-	// It is generally set to 1 minute and is recommended to be no less than 15 seconds.
-	ResultsExpiration int `default:"60" yaml:"results_expiration" json:"results_expiration" env:"task.results_expiration"`
+	// It is generally set to 5 minute and is recommended to be no less than 60 seconds.
+	RunExpiration int `default:"300" yaml:"results_expiration" json:"results_expiration" env:"task.results_expiration"`
 	// LockExpiration is Task atomic protection lock expiration time.
 	// Set according to the estimated maximum time for the task. You can set a longer time to enhance protection.
 	LockExpiration int `default:"18000" yaml:"lock_expiration" json:"lock_expiration" env:"task.lock_expiration"`
 	// VarExpiration is Task parameter expiration time.
-	VarExpiration int `default:"300" yaml:"var_expiration" json:"var_expiration" env:"task.var_expiration"`
+	VarExpiration int `default:"3600" yaml:"var_expiration" json:"var_expiration" env:"task.var_expiration"`
 }
 
 type RabbitMq struct {

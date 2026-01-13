@@ -11,8 +11,9 @@ import (
 
 func createTask(job string, stage int) error {
 	var (
-		steps      []Step
-		signatures []*tasks.Signature
+		redisKeyList = []interface{}{}
+		steps        []Step
+		signatures   []*tasks.Signature
 	)
 	logger.Log.Debugf("start create task in job(%s[%d])", job, stage)
 	number, err := service.Instance.GetAllItems(Step{JobId: job, StepInfo: StepInfo{Stage: stage}}, &steps)
@@ -27,8 +28,10 @@ func createTask(job string, stage int) error {
 		if step.State == tasks.StateSuccess {
 			continue
 		}
+		stepId := signatureId(step.ID)
+		redisKeyList = append(redisKeyList, stepId)
 		signatures = append(signatures, &tasks.Signature{
-			UUID: signatureId(step.ID),
+			UUID: stepId,
 			Name: step.Tag,
 			Args: []tasks.Arg{{
 				Type:  "string",
@@ -54,6 +57,11 @@ func createTask(job string, stage int) error {
 	group, err := newGroup(signatures...)
 	if err != nil {
 		return err
+	}
+	redisKeyList = append(redisKeyList, group.GroupUUID)
+	err = redisInstance.SAdd(recycleKeyId(job), finishExpiration, redisKeyList...)
+	if err != nil {
+		return fmt.Errorf("add recycle redis key error: %v", err)
 	}
 
 	finishId := fmt.Sprintf("finish:%s", group.GroupUUID)
