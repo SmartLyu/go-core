@@ -22,7 +22,6 @@ type Step struct {
 	JobId      string    `gorm:"column:job_id;type:varchar(255)" json:"job_id"`
 	Job        Job       `gorm:"foreignKey:JobId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 	CreateDate time.Time `gorm:"column:date;type:datetime" json:"date"`
-	StartTime  time.Time `gorm:"column:start_time;type:datetime" json:"start_time"`
 	FinishTime time.Time `gorm:"column:finish_time;type:datetime" json:"finish_time"`
 	Result     string    `gorm:"column:result;type:text" json:"result"`
 	Error      string    `gorm:"column:error;type:text" json:"error"`
@@ -31,8 +30,9 @@ type Step struct {
 }
 
 type StepInfo struct {
-	Name   string `gorm:"column:name;type:varchar(255)" json:"name"`
-	Tag    string `gorm:"column:tag;type:varchar(255)" json:"tag"`
-	Stage  int    `gorm:"column:stage;type:int" json:"stage"`
-	Option string `gorm:"column:option;type:text" json:"option"`
+	Name      string    `gorm:"column:name;type:varchar(255)" json:"name"`
+	Tag       string    `gorm:"column:tag;type:varchar(255)" json:"tag"`
+	Stage     int       `gorm:"column:stage;type:int" json:"stage"`
+	Option    string    `gorm:"column:option;type:text" json:"option"`
+	StartTime time.Time `gorm:"column:start_time;type:datetime" json:"start_time"`
 }

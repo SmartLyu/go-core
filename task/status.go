@@ -2,6 +2,8 @@ package task
 
 import (
 	"fmt"
+	"github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/yuanJewel/go-core/db/service"
 	"reflect"
 	"time"
 )
@@ -40,6 +42,15 @@ func wrapWithLogic(f Func) interface{} {
 		err = LockTaskState(id, "task")
 		if err != nil {
 			return makeErrorResult(fmt.Errorf("获取任务执行锁失败: %v", err))
+		}
+		_, err = service.Instance.UpdateItem(Step{ID: id}, &Step{
+			State: tasks.StateStarted,
+			StepInfo: StepInfo{
+				StartTime: time.Now(),
+			},
+		}, 1)
+		if err != nil {
+			return makeErrorResult(fmt.Errorf("更新任务状态执行锁失败: %v", err))
 		}
 
 		if f.Cancel {

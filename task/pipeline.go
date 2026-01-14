@@ -12,6 +12,7 @@ import (
 func createTask(job string, stage int) error {
 	var (
 		redisKeyList = []interface{}{}
+		expireTime   = time.Duration(0)
 		steps        []Step
 		signatures   []*tasks.Signature
 	)
@@ -28,11 +29,18 @@ func createTask(job string, stage int) error {
 		if step.State == tasks.StateSuccess {
 			continue
 		}
+		var eta time.Time
+		if step.StartTime.After(time.Now()) {
+			eta = step.StartTime
+			expireTime = step.StartTime.Sub(time.Now()) + finishExpiration
+		}
+
 		stepId := signatureId(step.ID)
 		redisKeyList = append(redisKeyList, stepId)
 		signatures = append(signatures, &tasks.Signature{
 			UUID: stepId,
 			Name: step.Tag,
+			ETA:  &eta,
 			Args: []tasks.Arg{{
 				Type:  "string",
 				Value: step.ID,
@@ -47,13 +55,6 @@ func createTask(job string, stage int) error {
 		})
 	}
 
-	_, err = service.Instance.UpdateItem(Step{JobId: job, StepInfo: StepInfo{Stage: stage}}, &Step{
-		State:     tasks.StateStarted,
-		StartTime: time.Now(),
-	}, int64(len(steps)))
-	if err != nil {
-		return err
-	}
 	group, err := newGroup(signatures...)
 	if err != nil {
 		return err
@@ -96,6 +97,17 @@ func createTask(job string, stage int) error {
 	_, err = machineryInstance.SendChord(chord, maxConcurrency())
 	if err == nil {
 		logger.Log.Debugf("create task(%v) successfully", steps)
+	}
+
+	if expireTime != 0 {
+		redisKeyList = append(redisKeyList, recycleKeyId(job))
+		for _, key := range redisKeyList {
+			err = redisInstance.Expire(key.(string), expireTime)
+			if err != nil {
+				return err
+			}
+			logger.Log.Debugf("set key(%s) expire to: %v", key, expireTime)
+		}
 	}
 	return err
 }

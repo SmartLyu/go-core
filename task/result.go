@@ -30,7 +30,7 @@ func LockTaskState(id string, suffix ...string) error {
 		return nil
 	}
 	if lock {
-		logger.Log.Debugf("task(%s) has been locked", id)
+		logger.Log.Debugf("task(%s) has been locked: %s", id, lockId)
 		return LockError(id)
 	}
 	err = redisInstance.Set(lockId, time.Now().String(), lockExpiration)
@@ -110,12 +110,12 @@ func errorToDb(errorStr, id string, _ ...interface{}) error {
 			ID:         id,
 			JobId:      idList[1],
 			CreateDate: time.Now(),
-			StartTime:  time.Now(),
 			StepInfo: StepInfo{
-				Name:   "任务完结模块抛出异常",
-				Tag:    "finish",
-				Stage:  0,
-				Option: "",
+				Name:      "任务完结模块抛出异常",
+				Tag:       "finish",
+				Stage:     0,
+				StartTime: time.Now(),
+				Option:    "",
 			},
 		}, 1)
 		if err != nil {

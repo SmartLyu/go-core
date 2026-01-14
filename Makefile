@@ -1,5 +1,5 @@
 APP=yuan
-VERSION=1.5.7
+VERSION=1.5.8
 GITBRANCH=`git symbolic-ref --short -q HEAD`
 GITREVISION=`git log -n1 --format=%H`
 BUILDUSER=luyu151111@gamil.com

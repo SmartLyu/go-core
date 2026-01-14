@@ -56,6 +56,7 @@ func InitWork(task Task, taskMap map[string]Func, f FinishInterface) (err error)
 			ExchangeType:  "direct",
 			BindingKey:    task.RabbitMq.Queue,
 			PrefetchCount: task.Concurrency,
+			DelayedQueue:  task.RabbitMq.Queue + "-delayed",
 		},
 	})
 	if err != nil {
